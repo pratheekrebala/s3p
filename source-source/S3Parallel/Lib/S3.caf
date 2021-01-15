@@ -17,12 +17,13 @@ class S3 extends BaseClass
     .then ({Buckets}) ->
       object {Name, CreationDate} from Buckets with-key Name with CreationDate
 
-  @list: ({bucket, prefix, limit=1000, startAfter}) =>
+  @list: ({bucket, prefix, limit=1000, requestPayer="requester", startAfter}) =>
     startTime = currentSecond()
     @s3.listObjectsV2
       Bucket:     bucket
       Prefix:     prefix
       MaxKeys:    limit
+      RequestPayer: requestPayer
       StartAfter: startAfter
     .promise()
     .tapCatch (error) ->
@@ -78,11 +79,14 @@ class S3 extends BaseClass
       copyOptions = if toFolder
         Bucket:     fromBucket
         Key:        fromKey
-
+        RequestPayer: "requester"
+        ACL:  "bucket-owner-full-control"
       else
         CopySource: "" #{fromBucket}/#{fromKey}
         Bucket:     toBucket
         Key:        toKey
+        RequestPayer: "requester"
+        ACL:  "bucket-owner-full-control"
 
       if verbose
         log.unquoted copyObject: copyOptions
@@ -131,6 +135,7 @@ class S3 extends BaseClass
     @s3.headObject
       Bucket: bucket
       Key: key
+      RequestPayer: "requester"
     .promise()
 
   @_normalizeCopyOptions: (options) ->
